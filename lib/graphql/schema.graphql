@@ -1,0 +1,26 @@
+type KrAgentCountersResume {
+    type: String   
+    total_tc: Int
+    total_restricted: Int
+    total_public: Int
+    total_obsolecence: Int
+    total_internal_use: Int
+    total_dp: Int
+    total_confidential: Int
+    total: Int
+    remaining: Int
+    percentage_tc: Int
+    percentage_obsolecence: Int
+    percentage_dp: Int
+    owner_enterprise_id_agent_type: String @aws_rename(to: "owner.enterprise.id#agent_type")
+    owner_area_name: String @aws_rename(to: "owner.area.name")
+    leak_document_value: Int
+    confidential_level: Int
+    type_agent_type_id: String @aws_rename(to: "type#agent_type#id")
+    owner_enterprise_id: String @aws_rename(to: "owner.enterprise.id")
+}
+
+type Query {
+    getData: [KrAgentCountersResume]
+    getTest(owner_enterprise_id: String!): Int
+}

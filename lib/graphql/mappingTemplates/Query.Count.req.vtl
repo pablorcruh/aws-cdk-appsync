@@ -1,0 +1,12 @@
+{
+    "version" : "2018-05-29",
+    "operation" : "Query",
+    "query" : {
+        "expression": "enterpriseId = :enterpriseId",
+        "expressionValues" : {
+            ":enterpriseId" : {
+                "S" : "${ctx.args.enterpriseId}"
+            }
+        }
+    }
+}
