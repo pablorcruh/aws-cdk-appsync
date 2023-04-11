@@ -1,0 +1,19 @@
+{
+    "version" : "2018-05-29",
+
+    "operation" : "Query",
+
+    "query" : {
+        "expression": "#appsync_enterpriseId  = :enterpriseId",
+        "expressionNames": {
+            "#appsync_enterpriseId" : "owner.enterprise.id",
+            "#total": "total"
+        },
+        "expressionValues" : {
+            ":enterpriseId" : $util.dynamodb.toDynamoDBJson($ctx.args.enterpriseId)
+        },
+        "projection": {
+            
+        }
+    },
+}

@@ -51,9 +51,9 @@ export class KrAppsyncStack extends cdk.Stack {
       definition: readFileSync("./lib/graphql/schema.graphql").toString(),
     });
 
-    const contacts = Table.fromTableName(this,'KrAgentCountersResume', 'kr-agents-counters-resume');
+    const summary = Table.fromTableName(this,'KrAgentCountersResume', 'kr-agents-counters-resume');
 
-    const contactsTableDatasource: CfnDataSource = new CfnDataSource(
+    const summaryTableDatasource: CfnDataSource = new CfnDataSource(
       this,
       "KrAgentCountersResumeTableDataSource",
       {
@@ -61,7 +61,7 @@ export class KrAppsyncStack extends cdk.Stack {
         name: "KrAgentCountersResumeTableDataSource",
         type: "AMAZON_DYNAMODB",
         dynamoDbConfig: {
-          tableName: contacts.tableName,
+          tableName: summary.tableName,
           awsRegion: this.region,
         },
         serviceRoleArn: dynamoDBRole.roleArn,
@@ -69,44 +69,44 @@ export class KrAppsyncStack extends cdk.Stack {
     );
 
 
-    const getContactsByCreatorResolver: CfnResolver = new CfnResolver(
+    const indicatorPerAreaResolver: CfnResolver = new CfnResolver(
       this,
-      "getContactsByCreatorResolver",
+      "indicatorPerAreaResolver",
       {
         apiId: graphAPI.attrApiId,
         typeName: "Query",
-        fieldName: "getData",
-        dataSourceName: contactsTableDatasource.name,
+        fieldName: "getIndicatorPerArea",
+        dataSourceName: summaryTableDatasource.name,
         requestMappingTemplate: readFileSync(
-          "./lib/graphql/mappingTemplates/Query.listContacts.req.vtl"
+          "./lib/graphql/mappingTemplates/Query.indicatorPerArea.req.vtl"
         ).toString(),
 
         responseMappingTemplate: readFileSync(
-          "./lib/graphql/mappingTemplates/Query.listContacts.res.vtl"
+          "./lib/graphql/mappingTemplates/Query.indicatorPerArea.res.vtl"
         ).toString(),
       }
     );
 
-    const getTestResolver: CfnResolver = new CfnResolver(
+    const classificationSummaryResolver: CfnResolver = new CfnResolver(
       this,
-      "getTestResolver",
+      "classificationSummaryResolver",
       {
         apiId: graphAPI.attrApiId,
         typeName: "Query",
-        fieldName: "getTest",
-        dataSourceName: contactsTableDatasource.name,
+        fieldName: "getClassificationSummary",
+        dataSourceName: summaryTableDatasource.name,
         requestMappingTemplate: readFileSync(
-          "./lib/graphql/mappingTemplates/Query.Count.req.vtl"
+          "./lib/graphql/mappingTemplates/Query.classificationSummary.req.vtl"
         ).toString(),
 
         responseMappingTemplate: readFileSync(
-          "./lib/graphql/mappingTemplates/Query.Count.res.vtl"
+          "./lib/graphql/mappingTemplates/Query.classificationSummary.res.vtl"
         ).toString(),
       }
     );
 
-    getContactsByCreatorResolver.addDependsOn(apiSchema);
-    getTestResolver.addDependsOn(apiSchema);
+    indicatorPerAreaResolver.addDependsOn(apiSchema);
+    classificationSummaryResolver.addDependsOn(apiSchema);
 
   }
 }

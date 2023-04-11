@@ -21,6 +21,6 @@ type KrAgentCountersResume {
 }
 
 type Query {
-    getData: [KrAgentCountersResume]
-    getTest(owner_enterprise_id: String!): Int
+    getIndicatorPerArea(enterpriseId: String): [KrAgentCountersResume]
+    getClassificationSummary(enterprise_id: String!): Int
 }
