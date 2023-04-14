@@ -1,15 +1,17 @@
 {
-    "version" : "2018-05-29",
+   "version" : "2017-02-28",
 
     "operation" : "Query",
 
     "query" : {
-        "expression": "#appsync_enterpriseId  = :enterpriseId",
+        "expression": "#appsync_enterpriseId  = :enterpriseId AND begins_with(#appsync_type, :skey)",
         "expressionNames": {
-            "#appsync_enterpriseId" : "owner.enterprise.id"
+            "#appsync_enterpriseId" : "owner.enterprise.id",
+            "#appsync_type": "type#agent_type#id"
         },
         "expressionValues" : {
-            ":enterpriseId" : $util.dynamodb.toDynamoDBJson($ctx.args.enterpriseId)
+            ":enterpriseId" : $util.dynamodb.toDynamoDBJson($ctx.args.enterpriseId),
+            ":skey" :  $util.dynamodb.toDynamoDBJson($ctx.args.skey)
         }
-    },
+    }
 }
