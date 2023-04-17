@@ -24,3 +24,7 @@ type Query {
     getIndicatorPerArea(enterpriseId: String): [KrAgentCountersResume]
     getClassificationSummary(enterpriseId: String, skey: String): [KrAgentCountersResume]
 }
+
+type Mutation {
+    validateRecaptcha(response: String!): String
+}

@@ -9,11 +9,19 @@ import {
   CfnDataSource,
   CfnResolver,
 } from "aws-cdk-lib/aws-appsync";
+import * as appsync from 'aws-cdk-lib/aws-appsync';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as opensearch from 'aws-cdk-lib/aws-opensearchservice'
 
 export class KrAppsyncStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+       
 
+    const openSearchDomain = 'https://search-bitmap-solutions-4yi3533owyvxnzjky3zet5h5au.us-east-1.es.amazonaws.com';
+    const myExistingDomain = opensearch.Domain.fromDomainEndpoint(
+      this, 'myExistingDomain', openSearchDomain); 
 
     const cloudWatchRole = new Role(this, "appSyncCloudWatchLogs", {
       assumedBy: new ServicePrincipal("appsync.amazonaws.com"),
@@ -28,6 +36,26 @@ export class KrAppsyncStack extends cdk.Stack {
     const dynamoDBRole = new Role(this, "DynamoDBRole", {
       assumedBy: new ServicePrincipal("appsync.amazonaws.com"),
     });
+
+   const openSearchRole = new Role(this, "OpenSearchDataSourceRole",{
+      inlinePolicies: {
+        'openSearchPolicy': new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: [
+                'es:ESHttpGet',
+                'es:ESHttpHead',
+              ],
+              resources: [
+                'arn:aws:es:us-east-1:634522811166:domain/bitmap-solutions',
+              ],
+            }),
+          ],
+        })
+      },
+      assumedBy: new ServicePrincipal("appsync.amazonaws.com")
+    })
 
     dynamoDBRole.addManagedPolicy(
       ManagedPolicy.fromAwsManagedPolicyName("AmazonDynamoDBFullAccess")
@@ -53,6 +81,19 @@ export class KrAppsyncStack extends cdk.Stack {
 
     const summary = Table.fromTableName(this,'KrAgentCountersResume', 'kr-agents-counters-resume');
 
+    const openSearchDataSource = new appsync.CfnDataSource(this, 'OpenSearchDataSource', {
+      apiId: graphAPI.attrApiId,
+      name: 'OpenSearchDataSource',
+      type: 'AMAZON_ELASTICSEARCH',
+      elasticsearchConfig: {
+        awsRegion: myExistingDomain.env.region,
+        endpoint: openSearchDomain
+      },
+      serviceRoleArn: openSearchRole.roleArn
+    });
+
+
+
     const summaryTableDatasource: CfnDataSource = new CfnDataSource(
       this,
       "KrAgentCountersResumeTableDataSource",
@@ -68,8 +109,30 @@ export class KrAppsyncStack extends cdk.Stack {
       }
     );
 
+    
+
 
     const indicatorPerAreaResolver: CfnResolver = new CfnResolver(
+      this,
+      "indicatorPerAreaResolver",
+      {
+        apiId: graphAPI.attrApiId,
+        typeName: "Query",
+        fieldName: "getIndicatorPerArea",
+        dataSourceName: openSearchDataSource.name,
+        requestMappingTemplate: readFileSync(
+          "./lib/graphql/mappingTemplates/Query.indicatorPerArea.req.vtl"
+        ).toString(),
+
+        responseMappingTemplate: readFileSync(
+          "./lib/graphql/mappingTemplates/Query.indicatorPerArea.res.vtl"
+        ).toString(),
+      }
+    );
+   
+
+
+   /*  const indicatorPerAreaResolver: CfnResolver = new CfnResolver(
       this,
       "indicatorPerAreaResolver",
       {
@@ -85,7 +148,7 @@ export class KrAppsyncStack extends cdk.Stack {
           "./lib/graphql/mappingTemplates/Query.indicatorPerArea.res.vtl"
         ).toString(),
       }
-    );
+    ); */
 
     const classificationSummaryResolver: CfnResolver = new CfnResolver(
       this,
@@ -105,8 +168,33 @@ export class KrAppsyncStack extends cdk.Stack {
       }
     );
 
-    indicatorPerAreaResolver.addDependsOn(apiSchema);
     classificationSummaryResolver.addDependsOn(apiSchema);
+    indicatorPerAreaResolver.addDependsOn(openSearchDataSource);
+    
+
+    /* const handler = new lambda.Function(this, 'Handler', {
+      runtime: lambda.Runtime.NODEJS_14_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset('lambda'),
+    });
+
+
+    const recaptchaLambdaResolver: CfnResolver = new CfnResolver(
+      this,
+      "classificationSummaryResolver",
+      {
+        apiId: graphAPI.attrApiId,
+        typeName: "Mutation",
+        fieldName: "validateRecaptcha",
+
+        requestMappingTemplate: readFileSync(
+          "./lib/http/mappingTemplates/Invoke.recaptchaValidator.req.vtl"
+        ).toString(),
+        responseMappingTemplate: readFileSync(
+          "./lib/http/mappingTemplates/Invoke.recaptchaValidator.res.vtl"
+        ).toString(),
+      }
+    ); */
 
   }
 }
