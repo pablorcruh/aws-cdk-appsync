@@ -23,6 +23,7 @@ type KrAgentCountersResume {
 type Query {
     getIndicatorPerArea(enterpriseId: String): [KrAgentCountersResume]
     getClassificationSummary(enterpriseId: String, skey: String): [KrAgentCountersResume]
+    getDomainVerification(domainName: String): Boolean
 }
 
 type Mutation {

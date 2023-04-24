@@ -1,0 +1,5 @@
+#if($ctx.result.statusCode == 200)
+    $util.toJson(true)
+#else
+    $util.toJson(false)
+#end

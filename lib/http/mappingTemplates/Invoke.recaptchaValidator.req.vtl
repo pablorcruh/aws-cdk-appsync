@@ -1,7 +1,14 @@
-{
-      "version": "2018-05-29",
-      "operation": "Invoke",
-      "payload": {
-        "response": $util.toJson($ctx.args.response)
-      }
+ {
+  "version": "2018-05-29",
+  "method": "POST",
+  "resourcePath": "/",
+  "params": {
+    "headers": {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "body": {
+      "recaptchaResponse": $util.toJson($ctx.args.recaptchaResponse),
+      "secret": "$util.urlEncode('6LelsIEkAAAAADMlvO_-k2XzGZIEu1BKqMN-JdcY')",
     }
+  }
+}

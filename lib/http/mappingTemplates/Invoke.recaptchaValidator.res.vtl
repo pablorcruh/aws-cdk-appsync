@@ -1,1 +1,8 @@
-$util.toJson($ctx.result.items)
+#if($ctx.result.success == true)
+    $util.toJson({"valid": true})
+#else
+    $util.toJson({
+    "valid": false,
+    "errors": $ctx.result["error-codes"]
+    })
+#end
