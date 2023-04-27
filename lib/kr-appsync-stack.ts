@@ -13,15 +13,33 @@ import * as appsync from 'aws-cdk-lib/aws-appsync';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as opensearch from 'aws-cdk-lib/aws-opensearchservice'
-
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 export class KrAppsyncStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
-       
 
-    const openSearchDomain = 'https://search-bitmap-solutions-4yi3533owyvxnzjky3zet5h5au.us-east-1.es.amazonaws.com';
+    const domainsTable = new dynamodb.Table(this, 'krDomainsTable', {
+      partitionKey: {
+        name: 'domain_name',
+        type: dynamodb.AttributeType.STRING,
+      },
+      sortKey: {
+        name: 'enterprise_id',
+        type: dynamodb.AttributeType.STRING,
+      },
+      tableName: 'krDomainsTable',
+      billingMode: dynamodb.BillingMode.PROVISIONED,
+      readCapacity: 1,
+      writeCapacity: 1,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+  
+
+    
+/*     const openSearchDomain = 'https://search-bitmap-solutions-4yi3533owyvxnzjky3zet5h5au.us-east-1.es.amazonaws.com';
     const myExistingDomain = opensearch.Domain.fromDomainEndpoint(
-      this, 'myExistingDomain', openSearchDomain); 
+      this, 'myExistingDomain', openSearchDomain);  */
 
     const cloudWatchRole = new Role(this, "appSyncCloudWatchLogs", {
       assumedBy: new ServicePrincipal("appsync.amazonaws.com"),
@@ -81,7 +99,7 @@ export class KrAppsyncStack extends cdk.Stack {
 
     const summary = Table.fromTableName(this,'KrAgentCountersResume', 'kr-agents-counters-resume');
 
-    const openSearchDataSource = new appsync.CfnDataSource(this, 'OpenSearchDataSource', {
+    /* const openSearchDataSource = new appsync.CfnDataSource(this, 'OpenSearchDataSource', {
       apiId: graphAPI.attrApiId,
       name: 'OpenSearchDataSource',
       type: 'AMAZON_ELASTICSEARCH',
@@ -90,8 +108,23 @@ export class KrAppsyncStack extends cdk.Stack {
         endpoint: openSearchDomain
       },
       serviceRoleArn: openSearchRole.roleArn
-    });
+    }); */
 
+
+    const domainsTableDatasource: CfnDataSource = new CfnDataSource(
+      this,
+      "KrDomainsTableDataSource",
+      {
+        apiId: graphAPI.attrApiId,
+        name: "KrDomainsTableDataSource",
+        type: "AMAZON_DYNAMODB",
+        dynamoDbConfig: {
+          tableName: domainsTable.tableName,
+          awsRegion: this.region,
+        },
+        serviceRoleArn: dynamoDBRole.roleArn,
+      }
+    );
 
 
     const summaryTableDatasource: CfnDataSource = new CfnDataSource(
@@ -112,7 +145,7 @@ export class KrAppsyncStack extends cdk.Stack {
     
 
 
-    const indicatorPerAreaResolver: CfnResolver = new CfnResolver(
+    /* const indicatorPerAreaResolver: CfnResolver = new CfnResolver(
       this,
       "indicatorPerAreaResolver",
       {
@@ -128,7 +161,7 @@ export class KrAppsyncStack extends cdk.Stack {
           "./lib/graphql/mappingTemplates/Query.indicatorPerArea.res.vtl"
         ).toString(),
       }
-    );
+    ); */
    
 
 
@@ -168,8 +201,30 @@ export class KrAppsyncStack extends cdk.Stack {
       }
     );
 
+
+    const domainNamesResolver: CfnResolver = new CfnResolver(
+      this,
+      "domainNamesResolver",
+      {
+        apiId: graphAPI.attrApiId,
+        typeName: "Query",
+        fieldName: "getDomainVerification",
+        dataSourceName: domainsTableDatasource.name,
+        requestMappingTemplate: readFileSync(
+          "./lib/graphql/mappingTemplates/Query.DomainValidation.req.vtl"
+        ).toString(),
+
+        responseMappingTemplate: readFileSync(
+          "./lib/graphql/mappingTemplates/Query.DomainValidation.res.vtl"
+        ).toString(),
+      }
+    );
+
     classificationSummaryResolver.addDependsOn(apiSchema);
-    indicatorPerAreaResolver.addDependsOn(openSearchDataSource);
+    domainNamesResolver.addDependsOn(apiSchema);
+
+    
+    //indicatorPerAreaResolver.addDependsOn(openSearchDataSource);
     
 
     /* const handler = new lambda.Function(this, 'Handler', {

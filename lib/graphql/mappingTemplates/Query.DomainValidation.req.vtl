@@ -1,0 +1,15 @@
+{
+   "version" : "2017-02-28",
+
+    "operation" : "Query",
+
+    "query" : {
+        "expression": "#domain_name  = :domain_name",
+        "expressionNames": {
+            "#domain_name" : "domain_name",
+        },
+        "expressionValues" : {
+            ":domain_name" : $util.dynamodb.toDynamoDBJson($ctx.args.domainName),
+        }
+    }
+} 
