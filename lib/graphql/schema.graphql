@@ -27,5 +27,5 @@ type Query {
 }
 
 type Mutation {
-    validateRecaptcha(response: String!): String
+    validateRecaptcha(recaptchaCode: String!): String
 }

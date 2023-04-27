@@ -9,45 +9,39 @@ import {
   CfnDataSource,
   CfnResolver,
 } from "aws-cdk-lib/aws-appsync";
-import * as appsync from 'aws-cdk-lib/aws-appsync';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as opensearch from 'aws-cdk-lib/aws-opensearchservice'
-import { Unit } from 'aws-cdk-lib/aws-cloudwatch';
 import * as rds from 'aws-cdk-lib/aws-rds';
-import { DatabaseInstance, DatabaseInstanceProps, DatabaseCluster, IDatabaseInstance } from 'aws-cdk-lib/aws-rds';
-import {CodePipeline, CodePipelineSource, ShellStep} from 'aws-cdk-lib/pipelines'
-
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 
 export class KrAppsyncStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
-       
 
+    const getSecretManagerInstance = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      'cdk-reports',
+      '/cdk-reports/aws/appsync/develop',
+    );
+         
     /* const openSearchDomain = 'https://search-bitmap-solutions-4yi3533owyvxnzjky3zet5h5au.us-east-1.es.amazonaws.com';
     const myExistingDomain = opensearch.Domain.fromDomainEndpoint(
       this, 'myExistingDomain', openSearchDomain);  */
 
-      const existingDbClusterArn = 'arn:aws:rds:us-east-1:123456789012:cluster:my-db-cluster';
-      const existingClusterInstance = rds.DatabaseCluster.fromDatabaseClusterAttributes(this, 'ExistingDBCluster', {
-        clusterIdentifier: existingDbClusterArn
-      });
-      
 
-      const auroraDbInstanceId = 'my-aurora-instance';
+      //const auroraDbInstanceId = 'database-1-instance-1';
 
 // Create a DatabaseInstance construct to reference the existing Aurora DB instance
 
-const dbInstanceIdentifier = 'my-rds-instance';
-const instanceEndpointAddress = 'my-rds-instance-xyz12345.us-east-1.rds.amazonaws.com';
+/* const dbInstanceIdentifier = 'database-1-instance-1';
+const instanceEndpointAddress = 'database-1-instance-1.cxvlqgqkz9qg.us-east-1.rds.amazonaws.com';
 const instancePort = 5432;
 const dbInstance = rds.DatabaseInstance.fromDatabaseInstanceAttributes(this, 'DbInstance', {
   instanceIdentifier: dbInstanceIdentifier,
   instanceEndpointAddress: instanceEndpointAddress,
   securityGroups: [],
-  port: instancePort
-});
-
+  port: instancePort,
+}); */
 
     const reCaptchaApiUrl = 'https://www.google.com/recaptcha/api/siteverify';
     
@@ -72,21 +66,22 @@ const dbInstance = rds.DatabaseInstance.fromDatabaseInstanceAttributes(this, 'Db
 
     const appsyncAuroraRole = new iam.Role(this, 'AppSyncAuroraRole', {
       roleName: 'AppSyncAuroraRole',
-      assumedBy: new iam.ServicePrincipal('rds.amazonaws.com'), // The assumed entity is the AppSync service
+      assumedBy: new iam.ServicePrincipal('appsync.amazonaws.com'), // The assumed entity is the AppSync service
     });
 
     appsyncAuroraRole.attachInlinePolicy(new iam.Policy(this, 'AuroraDBPolicy',{
       statements: [
         new iam.PolicyStatement({
-          actions:[
-            'rds:CreateDBCluster',
-            'rds:DescribeDBClusters'
+          actions: [
+            'sts:AssumeRole', 
+            'rds-db:connect',
+            'rds-data:ExecuteStatement',
+            'secretsmanager:GetSecretValue'
           ],
           resources: ['*']
         })
       ]
     }))
-
 
 
 /*     appsyncAuroraRole.addToPolicy(new iam.PolicyStatement({
@@ -198,29 +193,15 @@ const dbInstance = rds.DatabaseInstance.fromDatabaseInstanceAttributes(this, 'Db
         relationalDatabaseSourceType: 'RDS_HTTP_ENDPOINT',
         rdsHttpEndpointConfig: {
           awsRegion: this.region,
-          awsSecretStoreArn: 'arn:aws:secretsmanager:us-east-1:123456789012:secret:my-db-secret',
-          dbClusterIdentifier: existingDbClusterArn,
-          databaseName: 'databaseName'
+          awsSecretStoreArn: getSecretManagerInstance.secretArn,
+          dbClusterIdentifier: 'arn:aws:rds:us-east-1:634522811166:cluster:database-1',
+          schema: 'public',
+          databaseName: 'databaseName',
         }
       },
       serviceRoleArn: appsyncAuroraRole.roleArn
     });
 
-  
-    const domainTableDatasource: CfnDataSource = new CfnDataSource(
-      this,
-      "domainTableDatasource",
-      {
-        apiId: graphAPI.attrApiId,
-        name: "domainTableDatasource",
-        type: "AMAZON_DYNAMODB",
-        dynamoDbConfig: {
-          tableName: domainTable.tableName,
-          awsRegion: this.region,
-        },
-        serviceRoleArn: dynamoDBRole.roleArn,
-      }
-    );
 
     const reCaptchaDataSource: CfnDataSource = new CfnDataSource(
       this,
@@ -295,16 +276,28 @@ const dbInstance = rds.DatabaseInstance.fromDatabaseInstanceAttributes(this, 'Db
       }, 
     );
 
+    const domainResolver = new CfnResolver(this, 
+      'AuroraResolver', 
+      {
+        apiId: graphAPI.attrApiId,
+        typeName: 'Query',
+        fieldName: 'getDomainVerification',
+        dataSourceName: auroraDataSource.name,
+        requestMappingTemplate: readFileSync(
+          "./lib/graphql/mappingTemplates/Query.Domain.req.vtl"
+        ).toString(),
+        responseMappingTemplate: readFileSync(
+          "./lib/graphql/mappingTemplates/Query.Domain.res.vtl"
+        ).toString()
+    });
+
 
     recaptchaValidationResolver.addDependsOn(apiSchema)
 
     classificationSummaryResolver.addDependsOn(apiSchema);
     
     //indicatorPerAreaResolver.addDependsOn(openSearchDataSource);
+    domainResolver.addDependsOn(apiSchema);
    
   }
-
-
-
-
 }
