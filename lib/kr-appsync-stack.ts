@@ -24,26 +24,8 @@ export class KrAppsyncStack extends cdk.Stack {
       '/cdk-reports/aws/appsync/develop',
     );
          
-    /* const openSearchDomain = 'https://search-bitmap-solutions-4yi3533owyvxnzjky3zet5h5au.us-east-1.es.amazonaws.com';
-    const myExistingDomain = opensearch.Domain.fromDomainEndpoint(
-      this, 'myExistingDomain', openSearchDomain);  */
-
-
-      //const auroraDbInstanceId = 'database-1-instance-1';
-
-// Create a DatabaseInstance construct to reference the existing Aurora DB instance
-
-/* const dbInstanceIdentifier = 'database-1-instance-1';
-const instanceEndpointAddress = 'database-1-instance-1.cxvlqgqkz9qg.us-east-1.rds.amazonaws.com';
-const instancePort = 5432;
-const dbInstance = rds.DatabaseInstance.fromDatabaseInstanceAttributes(this, 'DbInstance', {
-  instanceIdentifier: dbInstanceIdentifier,
-  instanceEndpointAddress: instanceEndpointAddress,
-  securityGroups: [],
-  port: instancePort,
-}); */
-
-    const reCaptchaApiUrl = 'https://www.google.com/recaptcha/api/siteverify';
+    const recaptchaValue = getSecretManagerInstance.secretValueFromJson('recaptcha_secret').toString()
+    
     
     const cloudWatchRole = new Role(this, "appSyncCloudWatchLogs", {
       assumedBy: new ServicePrincipal("appsync.amazonaws.com"),
@@ -185,6 +167,10 @@ const dbInstance = rds.DatabaseInstance.fromDatabaseInstanceAttributes(this, 'Db
       }
     );
 
+    const clusterIdentifier = getSecretManagerInstance.secretValueFromJson('cluster_identifier')
+    const databaseName = getSecretManagerInstance.secretValueFromJson('database_name')
+    
+
     const auroraDataSource = new CfnDataSource(this, 'AuroraDBDataSource', {
       apiId: graphAPI.attrApiId,
       name: 'auroraDataSource',
@@ -194,9 +180,9 @@ const dbInstance = rds.DatabaseInstance.fromDatabaseInstanceAttributes(this, 'Db
         rdsHttpEndpointConfig: {
           awsRegion: this.region,
           awsSecretStoreArn: getSecretManagerInstance.secretArn,
-          dbClusterIdentifier: 'arn:aws:rds:us-east-1:634522811166:cluster:database-1',
+          dbClusterIdentifier: clusterIdentifier.unsafeUnwrap.toString(),
           schema: 'public',
-          databaseName: 'databaseName',
+          databaseName: databaseName.unsafeUnwrap.toString(),
         }
       },
       serviceRoleArn: appsyncAuroraRole.roleArn
