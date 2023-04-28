@@ -18,23 +18,27 @@ export class KrAppsyncStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const domainsTable = new dynamodb.Table(this, 'krDomainsTable', {
-      partitionKey: {
-        name: 'domain_name',
-        type: dynamodb.AttributeType.STRING,
-      },
-      sortKey: {
-        name: 'enterprise_id',
-        type: dynamodb.AttributeType.STRING,
-      },
-      tableName: 'krDomainsTable',
-      billingMode: dynamodb.BillingMode.PROVISIONED,
-      readCapacity: 1,
-      writeCapacity: 1,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
-    });
+    let domainsTable = dynamodb.Table.fromTableName(this, 'MyTable', 'krDomainsTable');
 
-  
+if (domainsTable.tableName == null) {
+  domainsTable = new dynamodb.Table(this, 'krDomainsTable', {
+    partitionKey: {
+      name: 'domain_name',
+      type: dynamodb.AttributeType.STRING,
+    },
+    sortKey: {
+      name: 'enterprise_id',
+      type: dynamodb.AttributeType.STRING,
+    },
+    tableName: 'krDomainsTable',
+    billingMode: dynamodb.BillingMode.PROVISIONED,
+    readCapacity: 1,
+    writeCapacity: 1,
+    removalPolicy: cdk.RemovalPolicy.RETAIN,
+  });
+}
+
+   
 
     
 /*     const openSearchDomain = 'https://search-bitmap-solutions-4yi3533owyvxnzjky3zet5h5au.us-east-1.es.amazonaws.com';
@@ -220,9 +224,15 @@ export class KrAppsyncStack extends cdk.Stack {
       }
     );
 
-    classificationSummaryResolver.addDependsOn(apiSchema);
-    domainNamesResolver.addDependsOn(apiSchema);
+    classificationSummaryResolver.addDependency(apiSchema);
+    domainNamesResolver.addDependency(apiSchema);
 
+    new cdk.CfnOutput(this, "appsync id", {
+      value: graphAPI.attrApiId,
+    });
+    new cdk.CfnOutput(this, "appsync Url", {
+      value: graphAPI.attrGraphQlUrl,
+    });
     
     //indicatorPerAreaResolver.addDependsOn(openSearchDataSource);
     
