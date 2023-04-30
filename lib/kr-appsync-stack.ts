@@ -50,10 +50,7 @@ if (domainsTable.tableName == null) {
   });
 }
 
-   
-
->>>>>>> Stashed changes
-    
+       
     const cloudWatchRole = new Role(this, "appSyncCloudWatchLogs", {
       assumedBy: new ServicePrincipal("appsync.amazonaws.com"),
     });
