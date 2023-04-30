@@ -13,6 +13,8 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as opensearch from 'aws-cdk-lib/aws-opensearchservice'
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+
 
 export class KrAppsyncStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -25,7 +27,32 @@ export class KrAppsyncStack extends cdk.Stack {
     );
          
     const recaptchaValue = getSecretManagerInstance.secretValueFromJson('recaptcha_secret').toString()
-    
+
+    const bucket_name = this.node.tryGetContext('recaptcha_private_key');
+
+    let domainsTable = dynamodb.Table.fromTableName(this, 'MyTable', 'krDomainsTable');
+
+if (domainsTable.tableName == null) {
+  domainsTable = new dynamodb.Table(this, 'krDomainsTable', {
+    partitionKey: {
+      name: 'domain_name',
+      type: dynamodb.AttributeType.STRING,
+    },
+    sortKey: {
+      name: 'enterprise_id',
+      type: dynamodb.AttributeType.STRING,
+    },
+    tableName: 'krDomainsTable',
+    billingMode: dynamodb.BillingMode.PROVISIONED,
+    readCapacity: 1,
+    writeCapacity: 1,
+    removalPolicy: cdk.RemovalPolicy.RETAIN,
+  });
+}
+
+   
+
+>>>>>>> Stashed changes
     
     const cloudWatchRole = new Role(this, "appSyncCloudWatchLogs", {
       assumedBy: new ServicePrincipal("appsync.amazonaws.com"),

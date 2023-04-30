@@ -20,10 +20,14 @@ type KrAgentCountersResume {
     owner_enterprise_id: String @aws_rename(to: "owner.enterprise.id")
 }
 
+type IdentityProvider {
+    identity_provier_name: String
+}
+
 type Query {
     getIndicatorPerArea(enterpriseId: String): [KrAgentCountersResume]
     getClassificationSummary(enterpriseId: String, skey: String): [KrAgentCountersResume]
-    getDomainVerification(domainName: String): Boolean
+    getDomainVerification(domainName: String): IdentityProvider
 }
 
 type Mutation {
