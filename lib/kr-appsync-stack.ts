@@ -20,25 +20,7 @@ export class KrAppsyncStack extends cdk.Stack {
 
     let domainsTable = dynamodb.Table.fromTableName(this, 'MyTable', 'krDomainsTable');
 
-if (domainsTable.tableName == null) {
-  domainsTable = new dynamodb.Table(this, 'krDomainsTable', {
-    partitionKey: {
-      name: 'domain_name',
-      type: dynamodb.AttributeType.STRING,
-    },
-    sortKey: {
-      name: 'enterprise_id',
-      type: dynamodb.AttributeType.STRING,
-    },
-    tableName: 'krDomainsTable',
-    billingMode: dynamodb.BillingMode.PROVISIONED,
-    readCapacity: 1,
-    writeCapacity: 1,
-    removalPolicy: cdk.RemovalPolicy.RETAIN,
-  });
-}
-
-   
+    const recaptchaValue = this.node.tryGetContext('recaptcha_private_key');
 
     
 /*     const openSearchDomain = 'https://search-bitmap-solutions-4yi3533owyvxnzjky3zet5h5au.us-east-1.es.amazonaws.com';
@@ -83,10 +65,29 @@ if (domainsTable.tableName == null) {
       ManagedPolicy.fromAwsManagedPolicyName("AmazonDynamoDBFullAccess")
     );
 
+    const recaptchaRole = new iam.Role(this, 'RecaptchaRole', {
+      roleName: 'recaptcha-role', // Replace with your desired role name
+      assumedBy: new iam.ServicePrincipal('appsync.amazonaws.com'), // Assume role by AppSync service
+    });
+
+    const recaptchaPolicy = new iam.Policy(this, 'RecaptchaPolicy', {
+      statements: [
+        new iam.PolicyStatement({
+          actions: ['execute-api:Invoke'],
+          effect: iam.Effect.ALLOW,
+          resources: ['arn:aws:execute-api:*:*:*/*/POST/https://www.google.com/recaptcha/api/siteverify'], // ReCAPTCHA API endpoint
+        }),
+      ],
+    });
+
+    // Attach the inline policy to the RecaptchaRole
+    recaptchaRole.attachInlinePolicy(recaptchaPolicy);
+
+
 
 
     const graphAPI = new CfnGraphQLApi(this, "graphqlApi", {
-      name: "sample-pipeline",
+      name: "kr-reports",
       authenticationType: "API_KEY",
       
       logConfig: {
@@ -102,6 +103,7 @@ if (domainsTable.tableName == null) {
     });
 
     const summary = Table.fromTableName(this,'KrAgentCountersResume', 'kr-agents-counters-resume');
+    const domainTable = Table.fromTableName(this,'KrDomainTable', 'kr-domain-table');
 
     /* const openSearchDataSource = new appsync.CfnDataSource(this, 'OpenSearchDataSource', {
       apiId: graphAPI.attrApiId,
@@ -146,7 +148,18 @@ if (domainsTable.tableName == null) {
       }
     );
 
-    
+    const reCaptchaDataSource: CfnDataSource = new CfnDataSource(
+      this,
+      "reCaptchaDataSource",
+      {
+        apiId: graphAPI.attrApiId,
+        name: "reCaptchaDataSource",
+        type: "HTTP",
+        httpConfig: {
+          endpoint: 'https://www.google.com/recaptcha/api/siteverify'
+        }
+      }
+    );
 
 
     /* const indicatorPerAreaResolver: CfnResolver = new CfnResolver(
@@ -224,6 +237,28 @@ if (domainsTable.tableName == null) {
       }
     );
 
+    const recaptchaTemplate = readFileSync(
+      "./lib/http/mappingTemplates/Invoke.recaptchaValidator.req.vtl", {encoding: 'utf8'})
+     const replacedTemplate = recaptchaTemplate.replace('$recaptchaValue',recaptchaValue)
+
+     const recaptchaValidationResolver: CfnResolver = new CfnResolver(
+      this,
+      "recaptchaValidationResolver",
+      {
+        
+        apiId: graphAPI.attrApiId,
+        typeName: "Mutation",
+        fieldName: "validateRecaptcha",
+        dataSourceName: reCaptchaDataSource.name,
+        requestMappingTemplate: replacedTemplate.toString(),
+        responseMappingTemplate: readFileSync(
+          "./lib/http/mappingTemplates/Invoke.recaptchaValidator.res.vtl"
+        ).toString()
+      }, 
+    );
+
+
+    recaptchaValidationResolver.addDependency(apiSchema);
     classificationSummaryResolver.addDependency(apiSchema);
     domainNamesResolver.addDependency(apiSchema);
 
@@ -232,6 +267,10 @@ if (domainsTable.tableName == null) {
     });
     new cdk.CfnOutput(this, "appsync Url", {
       value: graphAPI.attrGraphQlUrl,
+    });
+
+    new cdk.CfnOutput(this, "recaptcha value", {
+      value: recaptchaValue,
     });
     
     //indicatorPerAreaResolver.addDependsOn(openSearchDataSource);
