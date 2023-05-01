@@ -14,6 +14,7 @@ import * as opensearch from 'aws-cdk-lib/aws-opensearchservice'
 import * as rds from 'aws-cdk-lib/aws-rds';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as appsync from "aws-cdk-lib/aws-appsync";
 
 
 export class KrAppsyncStack extends cdk.Stack {
@@ -26,9 +27,10 @@ export class KrAppsyncStack extends cdk.Stack {
       '/cdk-reports/aws/appsync/develop',
     );
          
-    const recaptchaValue = getSecretManagerInstance.secretValueFromJson('recaptcha_secret').toString()
+    //const recaptchaValue = getSecretManagerInstance.secretValueFromJson('recaptcha_secret').toString()
 
-    const bucket_name = this.node.tryGetContext('recaptcha_private_key');
+    const recaptchaValue = this.node.tryGetContext('recaptcha_private_key');
+
 
     let domainsTable = dynamodb.Table.fromTableName(this, 'MyTable', 'krDomainsTable');
 
@@ -268,6 +270,10 @@ if (domainsTable.tableName == null) {
       }
     );
 
+    const recaptchaTemplate = readFileSync(
+      "./lib/http/mappingTemplates/Invoke.recaptchaValidator.res.vtl", {encoding: 'utf8'})
+     const replacedTemplate = recaptchaTemplate.replace('$recaptchaValue',recaptchaValue)
+
      const recaptchaValidationResolver: CfnResolver = new CfnResolver(
       this,
       "recaptchaValidationResolver",
@@ -277,9 +283,7 @@ if (domainsTable.tableName == null) {
         typeName: "Mutation",
         fieldName: "validateRecaptcha",
         dataSourceName: reCaptchaDataSource.name,
-        requestMappingTemplate: readFileSync(
-          "./lib/http/mappingTemplates/Invoke.recaptchaValidator.req.vtl"
-        ).toString(),
+        requestMappingTemplate: replacedTemplate.toString(),
         responseMappingTemplate: readFileSync(
           "./lib/http/mappingTemplates/Invoke.recaptchaValidator.res.vtl"
         ).toString()

@@ -8,7 +8,7 @@
     },
     "body": {
       "recaptchaResponse": $util.toJson($ctx.args.recaptchaCode),
-      "secret": "$util.urlEncode(${recaptchaValue})",
+      "secret": "$util.urlEncode($recaptchaValue)",
     }
   }
 }
