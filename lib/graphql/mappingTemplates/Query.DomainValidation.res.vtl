@@ -1,1 +1,8 @@
-$util.toJson($ctx.result.items)
+#set($items = $ctx.result.items)
+#set($result = [])
+#foreach($item in $items)
+    $util.qr($result.add($item.identity_provider_name))
+#end
+{
+  "identity_provider_name": $util.toJson($result)
+}

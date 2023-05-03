@@ -16,14 +16,19 @@ type KrAgentCountersResume {
     owner_area_name: String @aws_rename(to: "owner.area.name")
     leak_document_value: Int
     confidential_level: Int
-    type_agent_type__id: String @aws_rename(to: "type#agent_type#id")
+    type__agent_type__id: String @aws_rename(to: "type#agent_type#id")
     owner_enterprise_id: String @aws_rename(to: "owner.enterprise.id")
 }
+
+type IdentityProvider {
+    identity_provider_name: String
+}
+
 
 type Query {
     getIndicatorPerArea(enterpriseId: String): [KrAgentCountersResume]
     getClassificationSummary(enterpriseId: String, skey: String): [KrAgentCountersResume]
-    getDomainVerification(domainName: String): String
+    getDomainVerification(domainName: String): IdentityProvider
 }
 
 type Mutation {
