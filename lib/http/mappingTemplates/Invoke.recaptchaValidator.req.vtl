@@ -1,13 +1,13 @@
  {
   "version": "2018-05-29",
   "method": "POST",
-  "resourcePath": "/",
+    "resourcePath": "/recaptcha/api/siteverify",
   "params": {
     "headers": {
       "Content-Type": "application/x-www-form-urlencoded"
     },
     "body": {
-      "recaptchaResponse": $util.toJson($ctx.args.recaptchaCode),
+      "response": $util.toJson($ctx.args.recaptchaCode),
       "secret": "$util.urlEncode($recaptchaValue)",
     }
   }
