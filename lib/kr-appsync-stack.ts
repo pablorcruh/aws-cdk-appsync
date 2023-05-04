@@ -162,6 +162,7 @@ export class KrAppsyncStack extends cdk.Stack {
     );
 
 
+
     /* const indicatorPerAreaResolver: CfnResolver = new CfnResolver(
       this,
       "indicatorPerAreaResolver",

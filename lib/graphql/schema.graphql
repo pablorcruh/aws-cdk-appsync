@@ -9,15 +9,15 @@ type KrAgentCountersResume {
     total_confidential: Int
     total: Int
     remaining: Int
-    percentage_tc: Int
+    percentage_tc: String
     percentage_obsolecence: Int
-    percentage_dp: Int
-    owner_enterprise_id__agent_type: String @aws_rename(to: "owner.enterprise.id#agent_type")
-    owner_area_name: String @aws_rename(to: "owner.area.name")
+    percentage_dp: String
+    owner_enterprise_id__agent_type: String @aws_dynamodb(table: "kr-agents-counters-resume", attribute:"owner.enterprise.id#agent_type")
+    owner_area_name: String @aws_dynamodb(table: "kr-agents-counters-resume", attribute: "owner.area.name")
     leak_document_value: Int
     confidential_level: Int
-    type__agent_type__id: String @aws_rename(to: "type#agent_type#id")
-    owner_enterprise_id: String @aws_rename(to: "owner.enterprise.id")
+    type__agent_type__id: String @aws_dynamodb(table: "kr-agents-counters-resume", attribute: "type#agent_type#id", type: "String")
+    owner_enterprise_id: String @aws_dynamodb(table: "kr-agents-counters-resume", attribute: "owner.enterprise.id")
 }
 
 type IdentityProvider {
