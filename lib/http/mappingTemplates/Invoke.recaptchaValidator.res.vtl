@@ -1,8 +1,9 @@
-#if($ctx.result.success == true)
+#set($body = $ctx.result.body)
+#set($response = $util.parseJson($body))
+#if($response.success == true)
     $util.toJson({"valid": true})
 #else
     $util.toJson({
-    "valid": false,
-    "errors": $ctx.result
+    "valid": false
     })
 #end

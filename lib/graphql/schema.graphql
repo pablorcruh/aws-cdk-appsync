@@ -24,6 +24,10 @@ type IdentityProvider {
     identity_provider_name: String
 }
 
+type RecaptchaValidateResponse {
+    valid: Boolean
+}
+
 
 type Query {
     getIndicatorPerArea(enterpriseId: String): [KrAgentCountersResume]
@@ -32,5 +36,5 @@ type Query {
 }
 
 type Mutation {
-    validateRecaptcha(recaptchaCode: String!): String
+    validateRecaptcha(recaptchaCode: String!): RecaptchaValidateResponse
 }
