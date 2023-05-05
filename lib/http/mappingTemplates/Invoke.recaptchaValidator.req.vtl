@@ -1,11 +1,9 @@
-#set($secret = "")
 #set($response = $ctx.args.recaptchaCode)
-
 
 {
   "version": "2018-05-29",
   "method": "POST",
-  "resourcePath": "/recaptcha/api/siteverify?secret=$secret&response=$response",
+  "resourcePath": "/recaptcha/api/siteverify?secret=$recaptchaSecretValue&response=$response",
   "params": {
     "headers": {
       "Content-Type": "application/json"

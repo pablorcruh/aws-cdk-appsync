@@ -20,7 +20,7 @@ export class KrAppsyncStack extends cdk.Stack {
 
     let domainsTable = dynamodb.Table.fromTableName(this, 'MyTable', 'krDomainsTable');
 
-    const recaptchaValue = this.node.tryGetContext('recaptcha_private_key');
+    const recaptchaSecretValue = this.node.tryGetContext('recaptcha_private_key');
 
     
 /*     const openSearchDomain = 'https://search-bitmap-solutions-4yi3533owyvxnzjky3zet5h5au.us-east-1.es.amazonaws.com';
@@ -240,7 +240,7 @@ export class KrAppsyncStack extends cdk.Stack {
 
     const recaptchaTemplate = readFileSync(
       "./lib/http/mappingTemplates/Invoke.recaptchaValidator.req.vtl", {encoding: 'utf8'})
-     const replacedTemplate = recaptchaTemplate.replace('$recaptchaValue',recaptchaValue)
+     const replacedTemplate = recaptchaTemplate.replace('$recaptchaSecretValue',recaptchaSecretValue)
 
      const recaptchaValidationResolver: CfnResolver = new CfnResolver(
       this,
@@ -271,7 +271,7 @@ export class KrAppsyncStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, "recaptcha value", {
-      value: recaptchaValue,
+      value: recaptchaSecretValue,
     });
     
     //indicatorPerAreaResolver.addDependsOn(openSearchDataSource);
