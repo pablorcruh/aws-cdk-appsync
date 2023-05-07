@@ -7,7 +7,7 @@
         "expression": "#appsync_enterpriseId  = :enterpriseId AND begins_with(#appsync_type, :skey)",
         "expressionNames": {
             "#appsync_enterpriseId" : "owner.enterprise.id",
-            "#appsync_type": "type#agent_type#id"
+            "#appsync_type": "type__agent_type__id"
         },
         "expressionValues" : {
             ":enterpriseId" : $util.dynamodb.toDynamoDBJson($ctx.args.enterpriseId),

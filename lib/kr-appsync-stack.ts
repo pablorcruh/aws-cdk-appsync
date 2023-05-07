@@ -14,6 +14,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as opensearch from 'aws-cdk-lib/aws-opensearchservice'
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as cognito from "aws-cdk-lib/aws-cognito";
 export class KrAppsyncStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -26,6 +27,28 @@ export class KrAppsyncStack extends cdk.Stack {
 /*     const openSearchDomain = 'https://search-bitmap-solutions-4yi3533owyvxnzjky3zet5h5au.us-east-1.es.amazonaws.com';
     const myExistingDomain = opensearch.Domain.fromDomainEndpoint(
       this, 'myExistingDomain', openSearchDomain);  */
+
+      const userPool = new cognito.UserPool(this, "krUserPool", {
+        selfSignUpEnabled: true,
+        accountRecovery: cognito.AccountRecovery.PHONE_AND_EMAIL,
+        userVerification: {
+          emailStyle: cognito.VerificationEmailStyle.CODE,
+        },
+        autoVerify: {
+          email: true,
+        },
+        standardAttributes: {
+          email: {
+            required: true,
+            mutable: true,
+          },
+        },
+      });
+
+      const userPoolClient = new cognito.UserPoolClient(this, "UserPoolClient", {
+        userPool,
+      });
+  
 
     const cloudWatchRole = new Role(this, "appSyncCloudWatchLogs", {
       assumedBy: new ServicePrincipal("appsync.amazonaws.com"),
@@ -97,12 +120,33 @@ export class KrAppsyncStack extends cdk.Stack {
       xrayEnabled: false,
     });
 
+    const graphPrivateAPI = new CfnGraphQLApi(this, "graphqlPrivateApi", {
+      name: "kr-reports-private",
+      authenticationType: "AMAZON_COGNITO_USER_POOLS",
+      userPoolConfig: {
+        userPoolId: userPool.userPoolId,
+        defaultAction: "ALLOW",
+        awsRegion: "us-east-1",
+      },
+
+      logConfig: {
+        fieldLogLevel: "ALL",
+        cloudWatchLogsRoleArn: cloudWatchRole.roleArn,
+      },
+      xrayEnabled: false,
+    });
+
     const apiSchema = new CfnGraphQLSchema(this, "GraphqlApiSchema", {
       apiId: graphAPI.attrApiId,
       definition: readFileSync("./lib/graphql/schema.graphql").toString(),
     });
 
-    const summary = Table.fromTableName(this,'KrAgentCountersResume', 'kr-agents-counters-resume');
+    const apiPrivateSchema = new CfnGraphQLSchema(this, "GraphqlApiPrivateSchema", {
+      apiId: graphPrivateAPI.attrApiId,
+      definition: readFileSync("./lib/graphql/schema.graphql").toString(),
+    });
+
+    const summary = Table.fromTableName(this,'KrAgentCountersResume1', 'kr-agents-counters-resume1');
     const domainTable = Table.fromTableName(this,'KrDomainTable', 'kr-domain-table');
 
     /* const openSearchDataSource = new appsync.CfnDataSource(this, 'OpenSearchDataSource', {
@@ -135,10 +179,10 @@ export class KrAppsyncStack extends cdk.Stack {
 
     const summaryTableDatasource: CfnDataSource = new CfnDataSource(
       this,
-      "KrAgentCountersResumeTableDataSource",
+      "summaryTableDatasource",
       {
-        apiId: graphAPI.attrApiId,
-        name: "KrAgentCountersResumeTableDataSource",
+        apiId: graphPrivateAPI.attrApiId,
+        name: "summaryTableDatasource",
         type: "AMAZON_DYNAMODB",
         dynamoDbConfig: {
           tableName: summary.tableName,
@@ -205,7 +249,7 @@ export class KrAppsyncStack extends cdk.Stack {
       this,
       "classificationSummaryResolver",
       {
-        apiId: graphAPI.attrApiId,
+        apiId: graphPrivateAPI.attrApiId,
         typeName: "Query",
         fieldName: "getClassificationSummary",
         dataSourceName: summaryTableDatasource.name,
@@ -260,7 +304,7 @@ export class KrAppsyncStack extends cdk.Stack {
 
 
     recaptchaValidationResolver.addDependency(apiSchema);
-    classificationSummaryResolver.addDependency(apiSchema);
+    classificationSummaryResolver.addDependency(apiPrivateSchema);
     domainNamesResolver.addDependency(apiSchema);
 
     new cdk.CfnOutput(this, "appsync id", {
