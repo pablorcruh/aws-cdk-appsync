@@ -20,21 +20,7 @@ type KrAgentCountersResume {
     owner_enterprise_id: String @aws_dynamodb(table: "kr-agents-counters-resume1", attribute: "owner.enterprise.id")
 }
 
-type IdentityProvider {
-    identity_provider_name: String
-}
-
-type RecaptchaValidateResponse {
-    valid: Boolean
-}
-
 
 type Query {
-    getIndicatorPerArea(enterpriseId: String): [KrAgentCountersResume]
     getClassificationSummary(enterpriseId: String, skey: String): [KrAgentCountersResume]
-    getDomainVerification(domainName: String): IdentityProvider
-}
-
-type Mutation {
-    validateRecaptcha(recaptchaCode: String!): RecaptchaValidateResponse
 }

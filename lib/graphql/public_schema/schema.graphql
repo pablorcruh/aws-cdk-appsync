@@ -1,0 +1,16 @@
+type IdentityProvider {
+    identity_provider_name: String
+}
+
+type RecaptchaValidateResponse {
+    valid: Boolean
+}
+
+
+type Query {
+    getDomainVerification(domainName: String): IdentityProvider
+}
+
+type Mutation {
+    validateRecaptcha(recaptchaCode: String!): RecaptchaValidateResponse
+}

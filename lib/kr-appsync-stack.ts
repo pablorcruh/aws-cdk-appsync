@@ -138,12 +138,12 @@ export class KrAppsyncStack extends cdk.Stack {
 
     const apiSchema = new CfnGraphQLSchema(this, "GraphqlApiSchema", {
       apiId: graphAPI.attrApiId,
-      definition: readFileSync("./lib/graphql/schema.graphql").toString(),
+      definition: readFileSync("./lib/graphql/public_schema/schema.graphql").toString(),
     });
 
     const apiPrivateSchema = new CfnGraphQLSchema(this, "GraphqlApiPrivateSchema", {
       apiId: graphPrivateAPI.attrApiId,
-      definition: readFileSync("./lib/graphql/schema.graphql").toString(),
+      definition: readFileSync("./lib/graphql/private_schema/schema.graphql").toString(),
     });
 
     const summary = Table.fromTableName(this,'KrAgentCountersResume1', 'kr-agents-counters-resume1');
