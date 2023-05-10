@@ -1,0 +1,102 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "Lambda Invoke",
+    "States": {
+      "Lambda Invoke": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "OutputPath": "$.Payload",
+        "Parameters": {
+          "Payload.$": "$",
+          "FunctionName.$": "$inputValue"
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException",
+              "Lambda.TooManyRequestsException"
+            ],
+            "IntervalSeconds": 2,
+            "MaxAttempts": 6,
+            "BackoffRate": 2
+          }
+        ],
+        "Next": "Map"
+      },
+      "Map": {
+        "Type": "Map",
+        "ItemProcessor": {
+          "ProcessorConfig": {
+            "Mode": "INLINE"
+          },
+          "StartAt": "Pass",
+          "States": {
+            "Pass": {
+              "Type": "Pass",
+              "Next": "Query Obsolete Analysis"
+            },
+            "Query Obsolete Analysis": {
+              "Type": "Task",
+              "Parameters": {
+                "TableName": "MyData"
+              },
+              "Resource": "arn:aws:states:::aws-sdk:dynamodb:query",
+              "Next": "Map (1)"
+            },
+            "Map (1)": {
+              "Type": "Map",
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "INLINE"
+                },
+                "StartAt": "DynamoDB UpdateItem",
+                "States": {
+                  "DynamoDB UpdateItem": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::dynamodb:updateItem",
+                    "Parameters": {
+                      "TableName": "MyDynamoDBTable",
+                      "Key": {
+                        "Column": {
+                          "S": "MyEntry"
+                        }
+                      },
+                      "UpdateExpression": "SET MyKey = :myValueRef",
+                      "ExpressionAttributeValues": {
+                        ":myValueRef": {
+                          "S": "MyValue"
+                        }
+                      }
+                    },
+                    "End": true
+                  }
+                }
+              },
+              "Next": "Choice"
+            },
+            "Choice": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$LastEvaluatedKey",
+                  "IsPresent": true,
+                  "Next": "Add new LastEvaluatedKey"
+                }
+              ],
+              "Default": "Success"
+            },
+            "Add new LastEvaluatedKey": {
+              "Type": "Pass",
+              "Next": "Query Obsolete Analysis"
+            },
+            "Success": {
+              "Type": "Succeed"
+            }
+          }
+        },
+        "End": true
+      }
+    }
+  }

@@ -28,22 +28,9 @@ export class KrAppsyncStack extends cdk.Stack {
     const myExistingDomain = opensearch.Domain.fromDomainEndpoint(
       this, 'myExistingDomain', openSearchDomain);  */
 
-      const userPool = new cognito.UserPool(this, "krUserPool", {
-        selfSignUpEnabled: true,
-        accountRecovery: cognito.AccountRecovery.PHONE_AND_EMAIL,
-        userVerification: {
-          emailStyle: cognito.VerificationEmailStyle.CODE,
-        },
-        autoVerify: {
-          email: true,
-        },
-        standardAttributes: {
-          email: {
-            required: true,
-            mutable: true,
-          },
-        },
-      });
+    const userPoolArn = this.node.tryGetContext('cognito_user_pool');
+    const userPool = cognito.UserPool.fromUserPoolArn(this, 'KrUserPool', userPoolArn);
+
 
       const userPoolClient = new cognito.UserPoolClient(this, "UserPoolClient", {
         userPool,
