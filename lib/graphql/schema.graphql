@@ -23,19 +23,17 @@ type KrAgentCountersResume {
 
 type Query {
     getClassificationSummary(enterpriseId: String, skey: String): [KrAgentCountersResume]
-    getDomainVerification(domainName: String): IdentityProvider
-    @aws_api_key
+    getDomainVerification(domainName: String): IdentityProvider @aws_api_key
 }
 
 type IdentityProvider {
-    identity_provider_name: String
+    identity_provider_name: String @aws_api_key
 }
 
 type RecaptchaValidateResponse {
-    valid: Boolean
+    valid: Boolean @aws_api_key
 }
 
 type Mutation {
-    validateRecaptcha(recaptchaCode: String!): RecaptchaValidateResponse
-    @aws_api_key
+    validateRecaptcha(recaptchaCode: String!): RecaptchaValidateResponse @aws_api_key
 }

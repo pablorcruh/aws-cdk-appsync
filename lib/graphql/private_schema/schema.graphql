@@ -23,5 +23,4 @@ type KrAgentCountersResume {
 
 type Query {
     getClassificationSummary(enterpriseId: String, skey: String): [KrAgentCountersResume]
-    @aws_api_key
 }

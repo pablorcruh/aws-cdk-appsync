@@ -96,7 +96,7 @@ export class KrAppsyncStack extends cdk.Stack {
 
 
 
-    const graphAPI = new CfnGraphQLApi(this, "graphqlApi", {
+    /* const graphAPI = new CfnGraphQLApi(this, "graphqlApi", {
       name: "kr-reports",
       authenticationType: "API_KEY",
       
@@ -105,7 +105,7 @@ export class KrAppsyncStack extends cdk.Stack {
         cloudWatchLogsRoleArn: cloudWatchRole.roleArn,
       },
       xrayEnabled: false,
-    });
+    }); */
 
     const graphPrivateAPI = new CfnGraphQLApi(this, "graphqlPrivateApi", {
       name: "kr-reports-private",
@@ -115,6 +115,11 @@ export class KrAppsyncStack extends cdk.Stack {
         defaultAction: "ALLOW",
         awsRegion: "us-east-1",
       },
+      additionalAuthenticationProviders: [
+        {
+          authenticationType: 'API_KEY',
+        }
+      ],
 
       logConfig: {
         fieldLogLevel: "ALL",
@@ -123,14 +128,14 @@ export class KrAppsyncStack extends cdk.Stack {
       xrayEnabled: false,
     });
 
-    const apiSchema = new CfnGraphQLSchema(this, "GraphqlApiSchema", {
+    /* const apiSchema = new CfnGraphQLSchema(this, "GraphqlApiSchema", {
       apiId: graphAPI.attrApiId,
       definition: readFileSync("./lib/graphql/public_schema/schema.graphql").toString(),
-    });
+    }); */
 
     const apiPrivateSchema = new CfnGraphQLSchema(this, "GraphqlApiPrivateSchema", {
       apiId: graphPrivateAPI.attrApiId,
-      definition: readFileSync("./lib/graphql/private_schema/schema.graphql").toString(),
+      definition: readFileSync("./lib/graphql/schema.graphql").toString(),
     });
 
     const summary = Table.fromTableName(this,'KrAgentCountersResume1', 'kr-agents-counters-resume1');
@@ -152,7 +157,7 @@ export class KrAppsyncStack extends cdk.Stack {
       this,
       "KrDomainsTableDataSource",
       {
-        apiId: graphAPI.attrApiId,
+        apiId: graphPrivateAPI.attrApiId,
         name: "KrDomainsTableDataSource",
         type: "AMAZON_DYNAMODB",
         dynamoDbConfig: {
@@ -183,7 +188,7 @@ export class KrAppsyncStack extends cdk.Stack {
       this,
       "reCaptchaDataSource",
       {
-        apiId: graphAPI.attrApiId,
+        apiId: graphPrivateAPI.attrApiId,
         name: "reCaptchaDataSource",
         type: "HTTP",
         httpConfig: {
@@ -255,7 +260,7 @@ export class KrAppsyncStack extends cdk.Stack {
       this,
       "domainNamesResolver",
       {
-        apiId: graphAPI.attrApiId,
+        apiId: graphPrivateAPI.attrApiId,
         typeName: "Query",
         fieldName: "getDomainVerification",
         dataSourceName: domainsTableDatasource.name,
@@ -278,7 +283,7 @@ export class KrAppsyncStack extends cdk.Stack {
       "recaptchaValidationResolver",
       {
         
-        apiId: graphAPI.attrApiId,
+        apiId: graphPrivateAPI.attrApiId,
         typeName: "Mutation",
         fieldName: "validateRecaptcha",
         dataSourceName: reCaptchaDataSource.name,
@@ -290,15 +295,15 @@ export class KrAppsyncStack extends cdk.Stack {
     );
 
 
-    recaptchaValidationResolver.addDependency(apiSchema);
+    recaptchaValidationResolver.addDependency(apiPrivateSchema);
     classificationSummaryResolver.addDependency(apiPrivateSchema);
-    domainNamesResolver.addDependency(apiSchema);
+    domainNamesResolver.addDependency(apiPrivateSchema);
 
     new cdk.CfnOutput(this, "appsync id", {
-      value: graphAPI.attrApiId,
+      value: graphPrivateAPI.attrApiId,
     });
     new cdk.CfnOutput(this, "appsync Url", {
-      value: graphAPI.attrGraphQlUrl,
+      value: graphPrivateAPI.attrGraphQlUrl,
     });
 
     new cdk.CfnOutput(this, "recaptcha value", {
